@@ -10,23 +10,39 @@
     <!--link rel="icon" href="./favicon.ico" type="image/x-icon"-->
     <script>
         function add() {
+            //data from text area
             let v = data.value;
-            data.value = '';
+            //data.value = '';
+            //create a list with each line being one row
             let list = v.split('\n');
+            //name is in the first row
             let name = list[0];
+            //generate date
             let date = new Date();
             var dateFormat = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate()
             console.log(list);
 
-            //let str = '';
+            //iterate each line to split data form the order
             for (let i = 1; i < list.length; i++) {
+                list[i] = list[i].trim();
+                console.log("before: " + list[i]);
+                
+                //remove all previous char before hitting a number 
+                if (list[i].match(/\d/)) {
+                    amount_start = list[i].match(/\d/).index;
+                    list[i] = list[i].slice(amount_start, list[i].length);
+                }
+
+                console.log("after: " + list[i]);
+                
                 let line_order = list[i].split(' ');
                 let amount_full = line_order[0];
+                
                 let amount = amount_full;
                 line_order.shift();
                 //let index = 0;
                 let amount_left = "";
-                console.log(amount_full.match(/\D/));
+                
                 if (amount_full.match(/\D/)) {
                     index = amount_full.match(/\D/).index;
                     amount = amount_full.slice(0, index);
@@ -53,14 +69,14 @@
         <label for="w3review">Colar o pedido:</label>
         <textarea id="data" name="data" rows="25" cols="50">Anderson
 1 kg arroz arbóreo
-4 maços de aspargo 
-2 brócolis
-2 couve flor
-3 cenouras
+2 maços de aspargo 
+ - [] 2 brócolis
+[] 2 couve flor
+- []3 cenouras
 22l guaraná 0
 7pct suco de uva
 5cx água com gás</textarea>
-        <button onclick="add()">Add</button>
+        <button onclick="add()">Converter</button>
         </br>
         <table border="1">
             <tbody id="out">
