@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>My Website</title>
+    <!--link rel="stylesheet" href="./style.css"-->
+    <!--link rel="icon" href="./favicon.ico" type="image/x-icon"-->
+    <script>
+        function add() {
+            let v = data.value;
+            data.value = '';
+            let list = v.split('\n');
+            let name = list[0];
+            let date = new Date();
+            var dateFormat = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate()
+            console.log(list);
+
+            //let str = '';
+            for (let i = 1; i < list.length; i++) {
+                let line_order = list[i].split(' ');
+                let amount_full = line_order[0];
+                let amount = amount_full;
+                line_order.shift();
+                //let index = 0;
+                let amount_left = "";
+                console.log(amount_full.match(/\D/));
+                if (amount_full.match(/\D/)) {
+                    index = amount_full.match(/\D/).index;
+                    amount = amount_full.slice(0, index);
+                    amount_left = "(unidade: " + amount_full.slice(index, amount_full.length) + ") ";
+                }
+                out.innerHTML += "<tr>" +
+                    "<td>" + dateFormat + "</td>" +
+                    "<td>" + "novo" + "</td>" +
+                    "<td>" + name + "</td>" +
+                    "<td>" + line_order.map(x => `${x}`).join(' ') + amount_left + "</td>" +
+                    "<td>" + "</td>" +
+                    "<td>" + amount + "</td>" +
+                    "</tr>"
+            }
+
+
+        }
+    </script>
+</head>
+
+<body>
+    <main>
+        <h1>Conversor de pedido whatsapp</h1>
+        <label for="w3review">Colar o pedido:</label>
+        <textarea id="data" name="data" rows="25" cols="50">Anderson
+1 kg arroz arbóreo
+4 maços de aspargo 
+2 brócolis
+2 couve flor
+3 cenouras
+22l guaraná 0
+7pct suco de uva
+5cx água com gás</textarea>
+        <button onclick="add()">Add</button>
+        </br>
+        <table border="1">
+            <tbody id="out">
+
+            </tbody>
+        </br>
+        </table>
+        </br>
+    </main>
+    <!--script src="./index.js"></script-->
+</body>
+
+</html>
