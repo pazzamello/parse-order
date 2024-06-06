@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+   <title>SD Market</title>
+   <style>
+      .header-container {
+         align-items: center;
+         /* Para alinhar verticalmente a imagem e o texto */
+         text-align: center;
+         /* Centraliza o texto dentro do container */
+      }
+
+      #logoImage {
+         height: 10em;
+      }
+
+      h1,
+      h2,
+      p,
+      div,
+      main {
+         text-align: center;
+      }
+
+      table {
+         margin: 20px auto;
+         border-collapse: collapse;
+      }
+
+      td,
+      th {
+         padding: 8px 15px;
+         border: 1px solid black;
+      }
+
+      #resultsSection table td {
+         text-align: left;
+         text-transform: uppercase;
+         font-size: 20px;
+         font-weight: bold;
+      }
+
+      #loading {
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         background-color: rgba(255, 255, 255, 0.8);
+         z-index: 9999;
+         text-align: center;
+         padding-top: 20%;
+         font-size: 24px;
+         font-weight: bold;
+      }
+
+      @media print {
+         body * {
+            visibility: hidden;
+            font-family: 'Arial', sans-serif;
+         }
+
+         #outprint,
+         #outprint * {
+            visibility: visible;
+         }
+
+         #outprint {
+            position: absolute;
+            left: 0;
+            top: 0;
+         }
+      }
+   </style>
+   <script>
+
+
+      function add() {
+
+         const freteCheckbox = document.getElementById('freteCheckbox');
+         const valorFrete = document.getElementById('valorFrete');
+
+         // Verifica se o frete está marcado e se o valor do frete é válido
+         if (freteCheckbox.checked && (!valorFrete.value || isNaN(valorFrete.value) || valorFrete.value <= 0)) {
+            // Se o frete estiver marcado mas sem valor válido, exibe um alerta e impede a conversão
+            alert("Por favor, insira um valor de frete válido.");
+            valorFrete.focus(); // Foca no campo de valor do frete para o usuário corrigir
+            return; // Interrompe a execução da função
+         }
+
+         let v = data.value;
+         let list = v.split('\n');
+         let name = list[0];
+         let date = new Date();
+         var dateFormat = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
+
+         for (let i = 1; i < list.length; i++) {
+            list[i] = list[i].trim();
+
+            if (list[i].match(/\d/)) {
+               amount_start = list[i].match(/\d/).index;
+               list[i] = list[i].slice(amount_start, list[i].length);
+            }
+
+            let line_order = list[i].split(' ');
+            let amount_full = line_order[0];
+
+            let amount = amount_full;
+            line_order.shift();
+            let amount_left = "";
+
+            if (amount_full.match(/\D/)) {
+               index = amount_full.match(/\D/).index;
+               amount = amount_full.slice(0, index);
+               amount_left = "(unidade: " + amount_full.slice(index, amount_full.length) + ") ";
+            }
+            let description = line_order.map(x => `${x}`).join(' ') + amount_left;
+            out.innerHTML += "<tr>" +
+               "<td>" + dateFormat + "</td>" +
+               "<td>" + name + "</td>" +
+               "<td>" + description + "</td>" +
+               "<td>" + amount + "</td>" +
+               "</tr>";
+
+
+
+            if (i == 1) {
+               outprint.innerHTML += "<tr>" + "<td>" + name + "</td>" + "</tr>" + "<tr>" +
+                  "<td>" + description + "</td>" +
+                  "<td>" + amount + "</td>" +
+                  "</tr>";
+            } else {
+               outprint.innerHTML += "<tr>" +
+                  "<td>" + description + "</td>" +
+                  "<td>" + amount + "</td>" +
+                  "</tr>";
+            }
+
+            if (i == 1) {
+
+               let freteInfoText = document.getElementById('freteInfo').textContent; // Lê o valor armazenado
+               outprint.innerHTML = freteInfoText + outprint.innerHTML;
+            }
+            //outprint.innerHTML = "Frete:" + valorFrete.value + outprint.innerHTML;
+
+         }
+         document.getElementById("resultsSection").style.display = "block";
+      }
+
+      function copyTableContent() {
+         let table = document.getElementById('out');
+         let rows = table.rows;
+         let csvContent = "";
+
+         for (let i = 0; i < rows.length; i++) {
+            let cells = rows[i].cells;
+            let rowContent = [];
+            for (let j = 0; j < cells.length; j++) {
+               rowContent.push(cells[j].innerText);
+            }
+            csvContent += rowContent.join("	") + "\n";
+         }
+
+         // Cria um elemento temporário textarea para copiar o conteúdo
+         let tempElem = document.createElement('textarea');
+         document.body.appendChild(tempElem);
+         tempElem.value = csvContent;
+         tempElem.select();
+         document.execCommand('copy');
+         document.body.removeChild(tempElem);
+
+         alert("Conteúdo copiado com sucesso!");
+      }
+
+
+      function printTableContent() {
+         window.print();
+      }
+      function sendDataToGoogleSheets() {
+         let table = document.getElementById('out');
+         let rows = table.rows;
+         let url = "https://script.google.com/macros/s/AKfycbykIuAkWof5gTbexkJMXceAhfAthLnVuECtS054V8hkRX-g8d8_sX5vIfo1dNK0YXC03g/exec";
+         let totalRequests = rows.length;
+         let completedRequests = 0;
+
+         // Mostra o elemento de loading e a contagem regressiva inicial
+         document.getElementById("loading").style.display = "block";
+         updateRemainingCount(totalRequests);
+
+         function updateRemainingCount(remaining) {
+            document.getElementById("remainingCount").textContent = remaining;
+         }
+
+         function sendRequest(index) {
+            if (index >= rows.length) return;
+
+            let cells = rows[index].cells;
+            let data = {
+               "data": cells[0].innerText,
+               "cliente": cells[1].innerText,
+               "produto": cells[2].innerText,
+               "quantidade": cells[3].innerText
+            };
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+            xhr.onreadystatechange = function () {
+               if (xhr.readyState == 4) {
+                  completedRequests++;
+
+                  // Atualize a contagem regressiva
+                  updateRemainingCount(totalRequests - completedRequests);
+
+                  // Se todas as solicitações estiverem concluídas, oculta o elemento de loading
+                  if (completedRequests === totalRequests) {
+                     document.getElementById("loading").style.display = "none";
+                  }
+
+                  setTimeout(function () {
+                     sendRequest(index + 1);
+                  }, 1);
+               }
+            };
+
+            // Transforma os dados em uma string de parâmetros e os envia
+            xhr.send(encodeData(data));
+         }
+
+         sendRequest(0);
+      }
+
+
+
+      function encodeData(data) {
+         return Object.keys(data).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key])).join('&');
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+         const freteCheckbox = document.getElementById('freteCheckbox');
+         const freteValorDiv = document.getElementById('freteValorDiv');
+         const valorFrete = document.getElementById('valorFrete');
+
+         // Função para atualizar a visibilidade do campo Valor Frete e adicionar/remover o valor do frete
+         function toggleFreteInput() {
+            // Limpa o texto do frete anterior, se houver
+            let freteInfo = document.querySelector("#freteInfo");
+            if (freteInfo) {
+               freteInfo.remove();
+            }
+
+            if (freteCheckbox.checked) {
+               freteValorDiv.style.display = '';
+               let freteValue = valorFrete.value;
+               let freteText = freteValue ? `Valor Frete: ${freteValue}` : 'Valor Frete não especificado';
+               document.getElementById('outprint').insertAdjacentHTML('beforebegin', `<p id="freteInfo">${freteText}</p>`);
+            } else {
+               freteValorDiv.style.display = 'none';
+               document.getElementById('outprint').insertAdjacentHTML('beforebegin', '<p id="freteInfo">Sem Frete</p>');
+            }
+         }
+
+         // Inicializar com o valor padrão
+         toggleFreteInput();
+
+         // Adicionar evento para mudar a visibilidade baseado no estado da checkbox e atualizar valor do frete
+         freteCheckbox.addEventListener('change', function () {
+            toggleFreteInput();
+         });
+
+         valorFrete.addEventListener('input', function () {
+            if (freteCheckbox.checked) {
+               toggleFreteInput();
+            }
+         });
+      });
+
+
+   </script>
+</head>
+
+<body>
+   <main>
+      <div class="header-container">
+         <img id="logoImage" src="https://ibassets.com.br/ib.store.image.medium/m-92d00812c1d949e6b6a3da7bee04589b.jpeg"
+            alt="Logo">
+         <h1>Conversor de pedido whatsapp</h1>
+      </div>
+      <h2 for="w3review">Colar o pedido:</h2>
+      <textarea id="data" name="data" rows="25" cols="50"></textarea>
+      <br>
+      <!-- Insira isso após a sua área de texto existente -->
+      <label><input type="checkbox" id="freteCheckbox" checked> Frete?</label>
+      <br>
+      <!-- Campo de Valor Frete, inicialmente visível -->
+      <div id="freteValorDiv">
+         <label for="valorFrete">Valor Frete</label>
+         <input type="number" id="valorFrete" name="valorFrete" required>
+      </div>
+      <br>
+      <button onclick="add()">Converter</button>
+      <br>
+      <div id="resultsSection" style="display: none;">
+         <h2>Resumo do Pedido</h2>
+         <button onclick="copyTableContent()">Copiar Conteúdo</button>
+         <table border="1">
+            <thead>
+               <tr>
+                  <th>data</th>
+                  <th>cliente</th>
+                  <th>produto</th>
+                  <th>quantidade</th>
+               </tr>
+            </thead>
+            <tbody id="out">
+            </tbody>
+         </table>
+         <button onclick="sendDataToGoogleSheets()">Enviar para o Google Sheets</button>
+         <div id="loading" style="display: none;">
+            Enviando dados para a planilha ... <span id="remainingCount"></span> restantes.
+         </div>
+         <h2>Pedido para Impressão</h2>
+         <button onclick="printTableContent()">Imprimir Conteúdo</button>
+         <table border="0">
+            <tbody id="outprint">
+            </tbody>
+         </table>
+      </div>
+   </main>
+</body>
+
+</html>
